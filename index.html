@@ -3927,103 +3927,343 @@ if("EC01" == "MC04"){
     <iframe id="ok-iframe" src="https://oksoon.ai/chat?shop=shopnt&amp;d_key=e727ce6c-ae5f-4132-bbac-a7be5b72c5b3" width="100%" height="100%" frameborder="0" loading="lazy">
   </div></iframe></div></div><iframe height="0" width="0" style="display: none; visibility: hidden;"></iframe><div id="criteo-tags-div" style="display: none;"></div>
 
-<!-- HeyGen Interactive Avatar Integration -->
+
+<!-- HeyGen Avatar PIP Widget (V3 쇼핑몰 상담) -->
 <style>
-  #heygen-avatar-container {
+  /* =========================
+     HeyGen PIP Widget - 드래그 가능 버전
+     ========================= */
+  #heygen-pip-container {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 380px;
-    height: 500px;
     z-index: 999999;
     border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-    transition: all 0.3s ease;
+    overflow: visible;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   }
-  
-  #heygen-avatar-container.minimized {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    cursor: pointer;
+
+  #heygen-pip {
+    width: 380px;
+    height: 214px;
+    border: none;
+    border-radius: 16px;
+    background: #1a1a2e;
+    display: block;
   }
-  
-  #heygen-avatar-container.minimized iframe {
-    display: none;
+
+  /* 드래그 영역 - 테두리 */
+  .pip-drag-border {
+    position: absolute;
+    pointer-events: auto;
+    cursor: grab;
   }
-  
-  #heygen-avatar-container.minimized .avatar-toggle {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #F50D87 0%, #FF6B9D 100%);
-    color: white;
-    font-size: 32px;
+
+  .pip-drag-border:active {
+    cursor: grabbing;
   }
-  
-  #heygen-avatar-container:not(.minimized) .avatar-toggle {
+
+  .pip-drag-border.top {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 25px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .pip-drag-border.left {
+    top: 25px;
+    left: 0;
+    bottom: 0;
+    width: 8px;
+  }
+
+  .pip-drag-border.right {
+    top: 25px;
+    right: 0;
+    bottom: 0;
+    width: 8px;
+  }
+
+  .pip-drag-border.bottom {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    border-radius: 0 0 16px 16px;
+  }
+
+  #heygen-pip-container.dragging {
+    opacity: 0.9;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  #heygen-pip-container.dragging .pip-drag-border {
+    cursor: grabbing;
+  }
+
+  /* 호버 시 컨트롤 */
+  .pip-controls {
     position: absolute;
     top: 8px;
     right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #heygen-pip-container:hover .pip-controls {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .pip-ctrl-btn {
     width: 28px;
     height: 28px;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.5);
-    color: white;
     border: none;
+    border-radius: 50%;
     cursor: pointer;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    z-index: 10;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    transition: all 0.2s;
   }
-  
-  #heygen-avatar-container iframe {
-    width: 100%;
-    height: 100%;
+
+  .pip-ctrl-btn:hover {
+    background: rgba(0,0,0,0.9);
+    transform: scale(1.1);
+  }
+
+  .pip-ctrl-btn.close-btn:hover {
+    background: #ff5252;
+  }
+
+  /* 호버 그라데이션 */
+  .pip-hover-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+    border-radius: 16px 16px 0 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+
+  #heygen-pip-container:hover .pip-hover-gradient {
+    opacity: 1;
+  }
+
+  /* 최소화 */
+  #heygen-pip-container.minimized {
+    width: 120px !important;
+    height: 68px !important;
+  }
+
+  #heygen-pip-container.minimized #heygen-pip {
+    width: 120px !important;
+    height: 68px !important;
+  }
+
+  /* 숨김 */
+  #heygen-pip-container.hidden {
+    display: none !important;
+  }
+
+  /* 토글 버튼 (닫았을 때 표시) */
+  #heygen-pip-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
     border: none;
+    cursor: pointer;
+    z-index: 999998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: linear-gradient(135deg, #F50D87 0%, #FF6B9D 100%);
+    box-shadow: 0 4px 16px rgba(245, 13, 135, 0.4);
+    transition: transform 0.2s;
   }
-  
-  .avatar-pulse {
-    animation: pulse 2s infinite;
+
+  #heygen-pip-toggle:hover {
+    transform: scale(1.06);
   }
-  
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 13, 135, 0.4); }
-    50% { box-shadow: 0 0 0 15px rgba(245, 13, 135, 0); }
+
+  #heygen-pip-container.hidden ~ #heygen-pip-toggle {
+    display: flex !important;
+  }
+
+  @media (max-width: 768px) {
+    #heygen-pip {
+      width: 300px;
+      height: 169px;
+    }
   }
 </style>
 
-<div id="heygen-avatar-container" class="avatar-pulse">
-  <button class="avatar-toggle" onclick="toggleAvatar()" title="상담원 토글">
-    <span id="toggle-icon">✕</span>
-  </button>
-  <iframe 
-    src="https://shoppingnt-avatar.netlify.app/" 
-    allow="microphone; camera; autoplay; encrypted-media"
-    allowfullscreen>
-  </iframe>
+<!-- PIP 컨테이너 -->
+<div id="heygen-pip-container">
+  <iframe
+    id="heygen-pip"
+    src="https://shoppingnt-avatar.netlify.app/"    
+    allow="camera; microphone; autoplay; clipboard-write"
+  ></iframe>
+  
+  <!-- 드래그 영역 (테두리) -->
+  <div class="pip-drag-border top"></div>
+  <div class="pip-drag-border left"></div>
+  <div class="pip-drag-border right"></div>
+  <div class="pip-drag-border bottom"></div>
+  
+  <!-- 호버 그라데이션 -->
+  <div class="pip-hover-gradient"></div>
+  
+  <!-- 컨트롤 버튼 -->
+  <div class="pip-controls">
+    <button class="pip-ctrl-btn" onclick="toggleMinimizePIP()" title="최소화">−</button>
+    <button class="pip-ctrl-btn close-btn" onclick="closePIP()" title="닫기">×</button>
+  </div>
 </div>
 
+<!-- 토글 버튼 (닫았을 때 다시 열기) -->
+<button id="heygen-pip-toggle" onclick="showPIP()">💬</button>
+
+<!-- PIP 드래그 & 컨트롤 스크립트 -->
 <script>
-  function toggleAvatar() {
-    const container = document.getElementById('heygen-avatar-container');
-    const icon = document.getElementById('toggle-icon');
+(function() {
+  const container = document.getElementById('heygen-pip-container');
+  const dragBorders = document.querySelectorAll('.pip-drag-border');
+  
+  if (!container || !dragBorders.length) return;
+  
+  let isDragging = false;
+  let startX, startY, startLeft, startTop;
+  
+  dragBorders.forEach(border => {
+    border.addEventListener('mousedown', startDrag);
+    border.addEventListener('touchstart', startDrag, { passive: false });
+  });
+  
+  function startDrag(e) {
+    isDragging = true;
+    container.classList.add('dragging');
     
-    if (container.classList.contains('minimized')) {
-      container.classList.remove('minimized');
-      container.classList.add('avatar-pulse');
-      icon.textContent = '✕';
-    } else {
-      container.classList.add('minimized');
-      container.classList.remove('avatar-pulse');
-      icon.textContent = '💬';
-    }
+    const touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX;
+    startY = touch.clientY;
+    
+    const rect = container.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop = rect.top;
+    
+    e.preventDefault();
   }
+  
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('touchmove', drag, { passive: false });
+  
+  function drag(e) {
+    if (!isDragging) return;
+    
+    const touch = e.touches ? e.touches[0] : e;
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+    
+    let newLeft = startLeft + deltaX;
+    let newTop = startTop + deltaY;
+    
+    const maxLeft = window.innerWidth - container.offsetWidth;
+    const maxTop = window.innerHeight - container.offsetHeight;
+    
+    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+    newTop = Math.max(0, Math.min(newTop, maxTop));
+    
+    container.style.left = newLeft + 'px';
+    container.style.top = newTop + 'px';
+    container.style.right = 'auto';
+    container.style.bottom = 'auto';
+    
+    e.preventDefault();
+  }
+  
+  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('touchend', stopDrag);
+  
+  function stopDrag() {
+    isDragging = false;
+    container.classList.remove('dragging');
+  }
+})();
+
+let isPIPMinimized = false;
+
+function toggleMinimizePIP() {
+  const container = document.getElementById('heygen-pip-container');
+  const rect = container.getBoundingClientRect();
+  
+  const fullWidth = 380;
+  const fullHeight = 214;
+  const miniWidth = 120;
+  const miniHeight = 68;
+  
+  if (!isPIPMinimized) {
+    const rightEdge = rect.right;
+    const bottomEdge = rect.bottom;
+    
+    container.style.left = (rightEdge - miniWidth) + 'px';
+    container.style.top = (bottomEdge - miniHeight) + 'px';
+    container.style.right = 'auto';
+    container.style.bottom = 'auto';
+    
+    isPIPMinimized = true;
+    container.classList.add('minimized');
+  } else {
+    const rightEdge = rect.right;
+    const bottomEdge = rect.bottom;
+    
+    let newLeft = rightEdge - fullWidth;
+    let newTop = bottomEdge - fullHeight;
+    
+    newLeft = Math.max(0, newLeft);
+    newTop = Math.max(0, newTop);
+    
+    container.style.left = newLeft + 'px';
+    container.style.top = newTop + 'px';
+    container.style.right = 'auto';
+    container.style.bottom = 'auto';
+    container.style.width = '';
+    container.style.height = '';
+    
+    isPIPMinimized = false;
+    container.classList.remove('minimized');
+  }
+}
+
+function closePIP() {
+  document.getElementById('heygen-pip-container').classList.add('hidden');
+}
+
+function showPIP() {
+  const container = document.getElementById('heygen-pip-container');
+  container.classList.remove('hidden');
+  if (isPIPMinimized) {
+    isPIPMinimized = false;
+    container.classList.remove('minimized');
+  }
+}
 </script>
 
 </body></html>
