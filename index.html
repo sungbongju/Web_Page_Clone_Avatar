@@ -832,7 +832,7 @@ if("EC01" == "MC04"){
           <div class="sub-menu" style="display: none; height: 84.8px; padding-top: 10px; margin-top: 0px; padding-bottom: 10px; margin-bottom: 0px;">
             <ul class="menu-list">
               
-                <li><a href="javascript:goLoginMain();">로그인</a></li>
+                <li><a href="javascript:void(0);" onclick="openLoginModal();">로그인</a></li>
                 <li><a href="javascript:goJoin();">회원가입</a></li>
               
               
@@ -4264,6 +4264,300 @@ function showPIP() {
     container.classList.remove('minimized');
   }
 }
+</script>
+
+<!-- ================================================
+     🔐 페이크 로그인 모달 + DB 연동
+     ================================================ -->
+<style>
+/* 로그인 모달 스타일 */
+#fake-login-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999999;
+  justify-content: center;
+  align-items: center;
+}
+
+#fake-login-modal.show {
+  display: flex;
+}
+
+.login-modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.login-modal-content h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.login-modal-content .subtitle {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.login-modal-content input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.login-modal-content input:focus {
+  outline: none;
+  border-color: #F50D87;
+}
+
+.login-modal-content .btn-login {
+  width: 100%;
+  padding: 14px;
+  background: #F50D87;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-modal-content .btn-login:hover {
+  background: #d00a73;
+}
+
+.login-modal-content .btn-login:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.login-modal-content .btn-cancel {
+  margin-top: 12px;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.login-modal-content .btn-cancel:hover {
+  color: #333;
+}
+
+.login-modal-content .error-msg {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.login-modal-content .loading {
+  display: none;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* 로그인 상태 표시 */
+#login-status {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #F50D87;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 999998;
+  display: none;
+  box-shadow: 0 4px 12px rgba(245, 13, 135, 0.3);
+}
+
+#login-status.show {
+  display: block;
+}
+
+#login-status .logout-btn {
+  margin-left: 8px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+</style>
+
+<!-- 로그인 모달 HTML -->
+<div id="fake-login-modal">
+  <div class="login-modal-content">
+    <h2>🛒 로그인</h2>
+    <p class="subtitle">AI 상담 데모를 위한 고객 ID를 입력해주세요</p>
+    
+    <input type="text" id="customer-id-input" placeholder="고객 ID 입력 (예: C12345)" autocomplete="off">
+    
+    <p class="error-msg" id="login-error">고객 정보를 찾을 수 없습니다.</p>
+    <p class="loading" id="login-loading">🔍 고객 정보 조회 중...</p>
+    
+    <button class="btn-login" id="btn-do-login" onclick="doFakeLogin()">로그인</button>
+    <button class="btn-cancel" onclick="closeLoginModal()">취소</button>
+  </div>
+</div>
+
+<!-- 로그인 상태 표시 -->
+<div id="login-status">
+  <span id="login-user-name"></span>님
+  <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+</div>
+
+<script>
+// ================================================
+// 🔐 페이크 로그인 시스템
+// ================================================
+
+// API 주소 (aiforalab.com 서버)
+const SHOPPING_API_URL = 'https://aiforalab.com/shopping-api/api.php';
+
+// 현재 로그인된 고객 정보
+let currentCustomer = null;
+
+// 모달 열기
+function openLoginModal() {
+  document.getElementById('fake-login-modal').classList.add('show');
+  document.getElementById('customer-id-input').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-loading').style.display = 'none';
+  document.getElementById('customer-id-input').focus();
+}
+
+// 모달 닫기
+function closeLoginModal() {
+  document.getElementById('fake-login-modal').classList.remove('show');
+}
+
+// Enter 키로 로그인
+document.addEventListener('DOMContentLoaded', function() {
+  const input = document.getElementById('customer-id-input');
+  if (input) {
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        doFakeLogin();
+      }
+    });
+  }
+});
+
+// 로그인 실행
+async function doFakeLogin() {
+  const customerId = document.getElementById('customer-id-input').value.trim();
+  
+  if (!customerId) {
+    document.getElementById('login-error').textContent = '고객 ID를 입력해주세요.';
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  
+  // UI 상태 변경
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-loading').style.display = 'block';
+  document.getElementById('btn-do-login').disabled = true;
+  
+  try {
+    // API 호출
+    const response = await fetch(`${SHOPPING_API_URL}?action=get_customer&customer_id=${encodeURIComponent(customerId)}`);
+    const data = await response.json();
+    
+    if (data.success && data.customer) {
+      // 로그인 성공!
+      currentCustomer = data.customer;
+      
+      // 모달 닫기
+      closeLoginModal();
+      
+      // 로그인 상태 표시
+      document.getElementById('login-user-name').textContent = customerId;
+      document.getElementById('login-status').classList.add('show');
+      
+      // 아바타에 고객 정보 전달
+      sendCustomerToAvatar(currentCustomer);
+      
+      console.log('✅ 로그인 성공:', currentCustomer);
+    } else {
+      // 로그인 실패
+      document.getElementById('login-error').textContent = data.error || '고객 정보를 찾을 수 없습니다.';
+      document.getElementById('login-error').style.display = 'block';
+    }
+  } catch (error) {
+    console.error('로그인 에러:', error);
+    document.getElementById('login-error').textContent = '서버 연결에 실패했습니다.';
+    document.getElementById('login-error').style.display = 'block';
+  } finally {
+    document.getElementById('login-loading').style.display = 'none';
+    document.getElementById('btn-do-login').disabled = false;
+  }
+}
+
+// 로그아웃
+function doLogout() {
+  currentCustomer = null;
+  document.getElementById('login-status').classList.remove('show');
+  
+  // 아바타에 로그아웃 알림
+  const iframe = document.getElementById('heygen-iframe');
+  if (iframe && iframe.contentWindow) {
+    iframe.contentWindow.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
+  }
+  
+  console.log('👋 로그아웃 완료');
+}
+
+// 아바타에 고객 정보 전달
+function sendCustomerToAvatar(customer) {
+  const iframe = document.getElementById('heygen-iframe');
+  if (iframe && iframe.contentWindow) {
+    iframe.contentWindow.postMessage({
+      type: 'CUSTOMER_LOGIN',
+      customer: customer
+    }, '*');
+    
+    console.log('📤 아바타에 고객 정보 전달:', customer);
+  } else {
+    console.warn('아바타 iframe을 찾을 수 없습니다.');
+  }
+}
+
+// PIP 열릴 때 자동으로 고객 정보 전달
+const originalShowPIP = window.showPIP;
+window.showPIP = function() {
+  originalShowPIP();
+  
+  // 로그인 상태면 고객 정보 전달
+  if (currentCustomer) {
+    setTimeout(() => {
+      sendCustomerToAvatar(currentCustomer);
+    }, 1000);
+  }
+};
 </script>
 
 </body></html>
