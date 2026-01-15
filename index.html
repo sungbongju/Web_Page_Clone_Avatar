@@ -4254,6 +4254,13 @@ function toggleMinimizePIP() {
 
 function closePIP() {
   document.getElementById('heygen-pip-container').classList.add('hidden');
+  
+  // 세션 종료
+  const iframe = document.getElementById('heygen-pip');
+  if (iframe && iframe.contentWindow) {
+    iframe.contentWindow.postMessage({ type: 'STOP_AVATAR' }, '*');
+    console.log('📤 STOP_AVATAR 전송');
+  }
 }
 
 function showPIP() {
@@ -4262,6 +4269,20 @@ function showPIP() {
   if (isPIPMinimized) {
     isPIPMinimized = false;
     container.classList.remove('minimized');
+  }
+  
+  // 로그인 상태면 세션 재시작
+  if (currentCustomer) {
+    const iframe = document.getElementById('heygen-pip');
+    if (iframe && iframe.contentWindow) {
+      setTimeout(() => {
+        iframe.contentWindow.postMessage({
+          type: 'CUSTOMER_LOGIN',
+          customer: currentCustomer
+        }, '*');
+        console.log('📤 CUSTOMER_LOGIN 재전송');
+      }, 500);
+    }
   }
 }
 </script>
