@@ -4139,7 +4139,7 @@ if("EC01" == "MC04"){
 </div>
 
 <!-- 토글 버튼 (닫았을 때 다시 열기) -->
-<button id="heygen-pip-toggle" onclick="showPIP()">💬</button>
+<button id="heygen-pip-toggle" onclick="reopenPIP()">💬</button>
 
 <!-- PIP 드래그 & 컨트롤 스크립트 -->
 <script>
@@ -4270,19 +4270,24 @@ function showPIP() {
     isPIPMinimized = false;
     container.classList.remove('minimized');
   }
+}
+
+// X 버튼으로 닫았다가 💬 버튼으로 다시 열 때
+function reopenPIP() {
+  showPIP();
   
   // 로그인 상태면 세션 재시작
   if (currentCustomer) {
-    const iframe = document.getElementById('heygen-pip');
-    if (iframe && iframe.contentWindow) {
-      setTimeout(() => {
+    setTimeout(() => {
+      const iframe = document.getElementById('heygen-pip');
+      if (iframe && iframe.contentWindow) {
+        console.log('📤 CUSTOMER_LOGIN 재전송 (reopen)');
         iframe.contentWindow.postMessage({
           type: 'CUSTOMER_LOGIN',
           customer: currentCustomer
         }, '*');
-        console.log('📤 CUSTOMER_LOGIN 재전송');
-      }, 500);
-    }
+      }
+    }, 1000);
   }
 }
 </script>
@@ -4519,20 +4524,22 @@ async function doFakeLogin() {
       document.getElementById('login-user-name').textContent = customerId;
       document.getElementById('login-status').classList.add('show');
       
-      // 아바타에 고객 정보 전달
-      sendCustomerToAvatar(currentCustomer);
-      
       console.log('✅ 로그인 성공:', currentCustomer);
       
-      // ✅ 아바타 자동 시작
-      showPIP();
+      // PIP 열고 아바타 시작 (CUSTOMER_LOGIN 한 번만!)
+      const container = document.getElementById('heygen-pip-container');
+      container.classList.remove('hidden');
+      
       setTimeout(() => {
         const iframe = document.getElementById('heygen-pip');
         if (iframe && iframe.contentWindow) {
-          console.log('📤 START_AVATAR 메시지 전송');
-          iframe.contentWindow.postMessage({ type: 'START_AVATAR' }, '*');
+          console.log('📤 CUSTOMER_LOGIN 전송');
+          iframe.contentWindow.postMessage({
+            type: 'CUSTOMER_LOGIN',
+            customer: currentCustomer
+          }, '*');
         }
-      }, 1500);
+      }, 1000);
     } else {
       // 로그인 실패
       document.getElementById('login-error').textContent = data.error || '고객 정보를 찾을 수 없습니다.';
