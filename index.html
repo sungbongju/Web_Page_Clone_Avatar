@@ -4508,9 +4508,10 @@ async function doFakeLogin() {
       setTimeout(() => {
         const iframe = document.getElementById('heygen-iframe');
         if (iframe && iframe.contentWindow) {
+          console.log('📤 START_AVATAR 메시지 전송');
           iframe.contentWindow.postMessage({ type: 'START_AVATAR' }, '*');
         }
-      }, 500);
+      }, 1500);
     } else {
       // 로그인 실패
       document.getElementById('login-error').textContent = data.error || '고객 정보를 찾을 수 없습니다.';
