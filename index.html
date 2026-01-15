@@ -4556,17 +4556,11 @@ function sendCustomerToAvatar(customer) {
   }
 }
 
-// PIP 열릴 때 자동으로 고객 정보 전달
+// PIP 열릴 때 - 중복 전달 방지 (로그인 시 이미 전달됨)
 const originalShowPIP = window.showPIP;
 window.showPIP = function() {
   originalShowPIP();
-  
-  // 로그인 상태면 고객 정보 전달
-  if (currentCustomer) {
-    setTimeout(() => {
-      sendCustomerToAvatar(currentCustomer);
-    }, 1000);
-  }
+  // 로그인 시 CUSTOMER_LOGIN에서 이미 전달하므로 여기선 안 함
 };
 </script>
 
