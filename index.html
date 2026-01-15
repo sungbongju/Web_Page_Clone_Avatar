@@ -4506,7 +4506,7 @@ async function doFakeLogin() {
       // ✅ 아바타 자동 시작
       showPIP();
       setTimeout(() => {
-        const iframe = document.getElementById('heygen-iframe');
+        const iframe = document.getElementById('heygen-pip');
         if (iframe && iframe.contentWindow) {
           console.log('📤 START_AVATAR 메시지 전송');
           iframe.contentWindow.postMessage({ type: 'START_AVATAR' }, '*');
@@ -4533,7 +4533,7 @@ function doLogout() {
   document.getElementById('login-status').classList.remove('show');
   
   // 아바타에 로그아웃 알림
-  const iframe = document.getElementById('heygen-iframe');
+  const iframe = document.getElementById('heygen-pip');
   if (iframe && iframe.contentWindow) {
     iframe.contentWindow.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
   }
@@ -4543,7 +4543,7 @@ function doLogout() {
 
 // 아바타에 고객 정보 전달
 function sendCustomerToAvatar(customer) {
-  const iframe = document.getElementById('heygen-iframe');
+  const iframe = document.getElementById('heygen-pip');
   if (iframe && iframe.contentWindow) {
     iframe.contentWindow.postMessage({
       type: 'CUSTOMER_LOGIN',
